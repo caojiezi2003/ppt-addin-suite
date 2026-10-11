@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """生成《PPT 增强插件套件 · 使用说明》（自包含 HTML，截图 base64 内嵌）。
 
-一次运行产出三份（内容由同一份 HTML 模板派生，不会漂移）：
-    使用说明.html                          自包含单文件，可直接发给人
-    PPT 增强插件套件 · 使用说明.pdf        Chrome/Edge 无头打印的 A4 版
-    使用说明.md                            Markdown 版，配图走相对路径 screenshots/
+一次运行产出四份（内容由同一份 HTML 模板派生，不会漂移）：
+    使用说明.html                      自包含单文件，可直接发给人
+    PPT 增强插件套件 · 使用说明.pdf    Chrome / Edge 无头打印的 A4 版
+    使用说明.md                        Markdown 版，配图走相对路径 screenshots/
+    ../../README.md                    仓库首页 README，配图走 docs/screenshots/
 
-用法：  python _build_doc.py            # HTML + PDF + MD
-        python _build_md.py             # 只重新生成 Markdown
+用法：  python _build_doc.py            # HTML + PDF + MD + README
+        python _build_md.py             # 只重新生成 Markdown 与 README
 """
 import base64
 import io
@@ -137,26 +138,35 @@ HTML = r"""<!DOCTYPE html>
 <div class="page">
 
 <header>
-  <h1>PPT 增强插件套件 · 使用说明<span class="ver">v1.0.0</span></h1>
-  <div class="sub">适用于 Windows 版 PowerPoint 2016 / 2019 / 2021 / Microsoft 365 · 更新日期 2026-10-10</div>
+  <h1>PPT 增强插件套件<span class="ver">v1.0.0</span></h1>
+  <div class="sub">使用说明 · 适用于 Windows 版 PowerPoint 2016 / 2019 / 2021 / Microsoft 365 · 更新日期 2026-10-11</div>
 </header>
 
 <nav>
   <b>目 录</b>
   <ol>
-    <li><a href="#intro">套件简介</a></li>
+    <li><a href="#intro">套件简介与下载</a></li>
     <li><a href="#install">安装与卸载</a></li>
     <li><a href="#export">插件一：导出为图片</a></li>
     <li><a href="#slides">插件二：导出选中幻灯片（选页另存）</a></li>
     <li><a href="#replace">插件三：原位替换图片</a></li>
     <li><a href="#faq">常见问题</a></li>
+    <li><a href="#dev">开发与共建</a></li>
   </ol>
 </nav>
 
 <!-- ==================================================== 一、简介 -->
-<h2 id="intro">一、套件简介</h2>
-<p>「增强插件」是一套 PowerPoint 功能区加载项，把三个日常高频操作集成在同一张功能区内，
-安装后随 PowerPoint 自动加载，无需手动开启。</p>
+<h2 id="intro">一、套件简介与下载</h2>
+<p>一组根据自己常用需求、使用 VBA 宏写的 PowerPoint 加载项「增强插件」，
+目前包括按像素 / DPI 精确导出图片、导出选中幻灯片、原位替换图片
+（位置 / 尺寸 / 裁剪 / 旋转等属性零损失）。安装后随 PowerPoint 自动加载，无需手动开启。</p>
+
+<div class="box tip">
+  <b>下载：</b>在
+  <a href="https://github.com/caojiezi2003/ppt-addin-suite/releases/latest">Releases 页面</a>
+  下载最新的 <code>PptEnhanceSuite.ppam</code>，然后按第二节安装即可 ——
+  单文件、免注册组件、无其它依赖。
+</div>
 <table>
   <tr><th class="c">按钮</th><th class="c">所在分组</th><th>一句话说明</th></tr>
   <tr>
@@ -394,10 +404,23 @@ HTML = r"""<!DOCTYPE html>
 <p>把 <code>PptEnhanceSuite.ppam</code> 拷贝到目标电脑，按 2.2 节步骤安装即可；
 插件为单文件、免注册组件、无其他依赖。</p>
 
+<!-- ==================================================== 七、开发与共建 -->
+<h2 id="dev">七、开发与共建</h2>
+<p>本仓库同时面向开发者开放共建。架构设计、目录结构、构建方式、测试链，
+以及「如何继续新增插件 / 完善现有插件」的完整步骤与注意事项，见
+<a class="doclink" href="{{dev_doc}}">开发文档</a>。</p>
+
+<div class="box tip">
+  <b>参与方式：</b>欢迎在
+  <a href="https://github.com/caojiezi2003/ppt-addin-suite/issues">Issues</a>
+  反馈问题或提出需求，也欢迎直接提交 Pull Request。
+</div>
+
 <footer>
-  PPT 增强插件套件 v1.0.0 · 使用说明 · 2026-10-10<br>
+  PPT 增强插件套件 v1.0.0 · 使用说明 · 2026-10-11<br>
   安装位置：<code>%APPDATA%\Microsoft\AddIns\PptEnhanceSuite.ppam</code> ·
-  随 PowerPoint 启动自动加载
+  随 PowerPoint 启动自动加载<br>
+  项目地址：<a href="https://github.com/caojiezi2003/ppt-addin-suite">github.com/caojiezi2003/ppt-addin-suite</a>
 </footer>
 
 </div>
@@ -417,7 +440,10 @@ html = (HTML
         .replace("{{img:export_fhd_vs_4k.png}}", img("export_fhd_vs_4k.png"))
         .replace("{{img:slidesave.png}}", img("slidesave.png", 880))
         .replace("{{img:replace_pick.png}}", img("replace_pick.png", 880))
-        .replace("{{img:replace_done.png}}", img("replace_done.png")))
+        .replace("{{img:replace_done.png}}", img("replace_done.png"))
+        # 开发文档的相对路径：HTML/PDF 与 docs 下的 MD 用同目录名，
+        # README.md 在仓库根目录，由 _build_md.py 统一加 docs/ 前缀
+        .replace("{{dev_doc}}", "开发文档.md"))
 
 io.open(OUT, "w", encoding="utf-8", newline="\n").write(html)
 print("[html] written: %s  (%.1f KB)" % (OUT, os.path.getsize(OUT) / 1024))

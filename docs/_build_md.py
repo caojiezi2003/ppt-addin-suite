@@ -1,18 +1,24 @@
 # -*- coding: utf-8 -*-
-"""由《使用说明.html》生成 Markdown 版《使用说明.md》。
+"""由《使用说明.html》生成 Markdown 版《使用说明.md》与仓库首页 README.md。
 
 为什么要自动转换而不是另写一份：
-    HTML 版是自包含单文件（截图 base64 内嵌），Markdown 版则引用同目录 screenshots/。
-    两份内容由同一脚本链自动保持一致 —— 改内容只需要改 _build_doc.py 里的 HTML 模板，
-    重跑一次即可同步产出 HTML / PDF / MD 三份，不会出现版本漂移。
+    HTML 版是自包含单文件（截图 base64 内嵌），Markdown 版则引用 screenshots/ 目录。
+    内容由同一份 HTML 模板派生 —— 改内容只需要改 _build_doc.py 里的 HTML 模板，
+    重跑一次即可同步产出 HTML / PDF / MD / README 四份，不会出现版本漂移。
 
     python _build_md.py        # 也可由 _build_doc.py 末尾自动调用
 
-Markdown 版约定：
+两个 Markdown 输出的差别只在「相对路径前缀」：
+
+    使用说明.md   在 docs/ 下     图 screenshots/…       链接 开发文档.md
+    README.md     在仓库根目录    图 docs/screenshots/…  链接 docs/开发文档.md
+
+Markdown 约定：
     * 宽幅截图（原始宽度 >960px）用 <img width="960"> 约束显示宽度，
       Markdown 原生语法不支持指定宽度，HTML 标签是最兼容的折中；
     * 提示框转成引用块，参数表格转成 Markdown 表格；
-    * 图片路径为相对路径，分发时请连同 screenshots/ 目录一起带走。
+    * 站内锚点（#xxx）只保留文字 —— 各渲染器中文锚点规则不一，死链比无链接更糟；
+      指向 .md 的相对链接按各输出加前缀，外部 http(s) 链接原样保留。
 """
 import io
 import os
@@ -22,6 +28,7 @@ from html.parser import HTMLParser
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "使用说明.html")
 OUT = os.path.join(HERE, "使用说明.md")
+OUT_README = os.path.join(os.path.dirname(HERE), "README.md")
 
 VOID = {"br", "img", "hr", "meta", "link", "input"}
 SKIP = {"head", "style", "script", "title", "meta", "link"}
@@ -35,6 +42,21 @@ WIDE = {
     "slidesave.png": 880,
     "replace_pick.png": 880,
 }
+
+REPO_URL = "https://github.com/caojiezi2003/ppt-addin-suite"
+_BADGE = "https://img.shields.io/badge/"
+BADGES = "\n".join([
+    "[![License: MIT](" + _BADGE + "License-MIT-yellow.svg)]"
+    "(" + REPO_URL + "/blob/main/LICENSE)",
+    "[![Download](" + _BADGE + "download-PptEnhanceSuite.ppam-success.svg)]"
+    "(" + REPO_URL + "/releases/latest)",
+    "[![Platform](" + _BADGE
+    + "platform-Windows%20%C2%B7%20PowerPoint%202016%2B-0078d4.svg)](#)",
+])
+
+# 每次转换前由 convert() 设置
+IMG_PREFIX = "screenshots/"
+LINK_PREFIX = ""
 
 
 class Node(object):
@@ -92,12 +114,23 @@ def text_of(node):
 
 def img_md(node):
     name = node.attrs.get("alt", "")
-    src = "screenshots/" + name
+    src = IMG_PREFIX + name
     label = os.path.splitext(name)[0]
     w = WIDE.get(name)
     if w:
         return '<img src="%s" alt="%s" width="%d">' % (src, label, w)
     return "![%s](%s)" % (label, src)
+
+
+def link_md(node):
+    """站内锚点只留文字；.md 相对链接加前缀；外部链接原样保留。"""
+    txt = inner(node.children).strip()
+    href = node.attrs.get("href", "")
+    if not href or href.startswith("#"):
+        return txt
+    if href.startswith(("http://", "https://", "mailto:")):
+        return "[%s](%s)" % (txt, href)
+    return "[%s](%s%s)" % (txt, LINK_PREFIX, href)
 
 
 def inner(kids):
@@ -126,8 +159,8 @@ def inline(node):
         return "**" + inner(node.children).strip() + "**"
     if tag == "code":
         return "`" + text_of(node).strip() + "`"
-    if tag == "a":                       # 锚点在 Markdown 里不可靠，只保留文字
-        return inner(node.children).strip()
+    if tag == "a":
+        return link_md(node)
     if tag == "span" and "pill" in cls:
         return "`" + text_of(node).strip() + "`"
     if tag == "span" and "en" in cls:
@@ -249,7 +282,11 @@ def render(node, out):
         render(c, out)
 
 
-def main():
+def convert(out_path, img_prefix, link_prefix, badges="", tail_comment=""):
+    """把 使用说明.html 转成一份 Markdown。前缀决定它在仓库里的位置。"""
+    global IMG_PREFIX, LINK_PREFIX
+    IMG_PREFIX, LINK_PREFIX = img_prefix, link_prefix
+
     src = io.open(SRC, encoding="utf-8").read()
     parser = DocParser()
     parser.feed(src)
@@ -265,13 +302,33 @@ def main():
     # 中文标点后紧跟加粗标记时也不要留空格
     md = re.sub(r"(?<=[，。、：；！？）】」])[ \t]+(?=\*\*)", "", md)
     md = re.sub(r"\n{3,}", "\n\n", md).strip() + "\n"
-    md += ("\n<!-- 配图位于同目录 screenshots/ 下；本文与 使用说明.html / PDF 版内容一致，"
-           "由 _build_doc.py 统一生成。 -->\n")
 
-    io.open(OUT, "w", encoding="utf-8", newline="\n").write(md)
+    if badges:
+        # 徽章插在首个二级标题（目录）之前
+        lines = md.split("\n")
+        for i, ln in enumerate(lines):
+            if ln.startswith("## "):
+                lines.insert(i, badges)
+                lines.insert(i + 1, "")
+                break
+        md = "\n".join(lines)
+
+    md += "\n" + tail_comment + "\n"
+
+    io.open(out_path, "w", encoding="utf-8", newline="\n").write(md)
     print("[md  ] written: %s  (%.1f KB, %d 行)" %
-          (OUT, len(md.encode("utf-8")) / 1024.0, md.count("\n")))
-    return OUT
+          (out_path, len(md.encode("utf-8")) / 1024.0, md.count("\n")))
+    return out_path
+
+
+def main():
+    convert(OUT, "screenshots/", "", "",
+            "<!-- 配图位于同目录 screenshots/ 下；本文与 使用说明.html / PDF 版内容一致，"
+            "由 _build_doc.py 统一生成。 -->")
+    convert(OUT_README, "docs/screenshots/", "docs/", BADGES,
+            "<!-- 本文件由 docs/_build_doc.py 自动生成，请勿直接编辑；"
+            "改内容请改 docs/_build_doc.py 里的 HTML 模板后重跑该脚本。 -->")
+    return OUT, OUT_README
 
 
 if __name__ == "__main__":

@@ -11,22 +11,5 @@
     "id": "tabEnhance",
     "label": "增强插件",
     "insertAfterMso": "TabInsert"
-  },
-  "legacy": [
-    {
-      "note": "旧「导出图片」加载项（阶段 1 已并入本套件，功能区会多出一个「图片导出」标签）",
-      "registry": "PptImageExport",
-      "files": ["PptImageExport.ppam"]
-    },
-    {
-      "note": "旧「原位替换」加载项 V3（阶段 3 已并入本套件；其包内没有 customUI，故不产生功能区标签，但仍会随启动加载）",
-      "registry": "PPT原位替换插件V3",
-      "files": ["PPT原位替换插件V3.ppam"]
-    },
-    {
-      "note": "旧「选页另存」加载项（阶段 2 已并入本套件；该插件从未登记过启动项，此处仅清理可能的残留副本）",
-      "registry": "选取另存",
-      "files": ["选取另存.ppam"]
-    }
-  ]
+  }
 }

@@ -2,7 +2,7 @@
 * text=auto eol=lf
 
 # VBA 源码：构建输入，保持字节原样不转换。
-# 项目内既有 LF（重写模块）也有 CRLF（由旧加载项迁移的 m_ImageExport.bas），
+# 项目内既有 LF（后期重写的模块）也有 CRLF（沿用早期写法的 m_ImageExport.bas），
 # 两种换行均已通过完整回归验证，交给 Git 转换反而可能影响构建产物。
 *.bas -text -eol
 *.vba -text -eol

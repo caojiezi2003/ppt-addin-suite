@@ -25,7 +25,6 @@ PPT 增强插件套件 —— 构建脚本
     python build_suite.py --no-install    # 只构建
     python build_suite.py --register-only # 只把 dist 里的产物安装登记
     python build_suite.py --list          # 只列出扫描到的插件
-    python build_suite.py --disable-legacy# 按 suite.json 的 legacy 清单清理旧加载项
 """
 
 import os
@@ -544,128 +543,6 @@ def install(src_path, suite):
     return dst, reg_ok
 
 
-def list_legacy_installed(exclude_names):
-    """列出 %APPDATA%\\Microsoft\\AddIns 下除本套件外的其它加载项（供切换时清理）"""
-    addins_dir = os.path.join(os.environ["APPDATA"], "Microsoft", "AddIns")
-    out = []
-    if os.path.isdir(addins_dir):
-        for f in sorted(os.listdir(addins_dir)):
-            if f.lower().endswith((".ppam", ".ppa")) and f not in exclude_names:
-                out.append(os.path.join(addins_dir, f))
-    return out
-
-
-def disable_legacy(suite):
-    """按 suite.json 的 legacy 清单，解除并移除被本套件取代的旧加载项。
-
-    设计上刻意「只认清单、不做扫描」：
-    清理对象必须显式写在 suite.json 的 legacy 数组里。绝不去遍历注册表或
-    AddIns 目录「猜」哪些是旧的 —— 那样会误伤 iSlide 之类与本套件无关的
-    第三方加载项。要清理什么，是可审阅、可 diff 的声明。
-
-    两个动作，作用域都被严格限死：
-      ① 注册表：只删 HKCU\\...\\PowerPoint\\AddIns\\<清单里的名字> 这一个键
-      ② 文件：  只删 %APPDATA%\\Microsoft\\AddIns\\<清单里的文件名> 这一个文件
-         —— 按文件名精确匹配，不递归、不通配，绝不触碰用户的其它目录
-    """
-    s = suite["suite"]
-    office_ver = s.get("office_ver", "16.0")
-    addins_dir = os.path.join(os.environ["APPDATA"], "Microsoft", "AddIns")
-    entries = suite.get("legacy") or []
-
-    log("=" * 66)
-    log("增强插件 · 清理被取代的旧加载项")
-    log("=" * 66)
-
-    if not entries:
-        log("[L] suite.json 里没有 legacy 清单，无可清理项")
-        return 0
-
-    if powerpoint_running():
-        log("[L] 中止：请先完全退出 PowerPoint。")
-        log("      加载项文件在 PowerPoint 运行期间被占用，删不掉；")
-        log("      注册表登记也应在关闭状态下修改，避免被回写覆盖。")
-        return 3
-
-    log("[L] PowerPoint 未运行，可以安全清理")
-    log("[L] 清理范围（仅以下 %d 条，不做任何扫描）：" % len(entries))
-    for e in entries:
-        log("      - %s" % (e.get("note") or e.get("registry", "?")))
-
-    removed_reg, removed_file = 0, 0
-    problems = []
-
-    for e in entries:
-        reg = e.get("registry")
-        log("")
-        log("[L] --- %s" % (e.get("note") or reg or "?"))
-
-        # ---- ① 解除注册表登记 ----
-        if reg:
-            key_path = r"Software\Microsoft\Office\%s\PowerPoint\AddIns\%s" % (office_ver, reg)
-            path_back = "(无 Path 值)"
-            try:
-                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path) as k:
-                    try:
-                        path_back = winreg.QueryValueEx(k, "Path")[0]
-                    except FileNotFoundError:
-                        pass
-            except FileNotFoundError:
-                log("[L]   注册表登记不存在，跳过（%s）" % reg)
-                reg = None
-            except OSError as ex:
-                problems.append("读取注册表项 %s 失败：%s" % (reg, ex))
-                reg = None
-
-            if reg:
-                try:
-                    winreg.DeleteKey(winreg.HKEY_CURRENT_USER, key_path)
-                    log("[L]   已删除注册表登记：HKCU\\...\\PowerPoint\\AddIns\\%s" % reg)
-                    log("[L]     原指向：%s" % path_back)
-                    removed_reg += 1
-                except OSError as ex:
-                    problems.append("删除注册表项 %s 失败：%s" % (reg, ex))
-
-        # ---- ② 移除 AddIns 目录内的旧文件 ----
-        for fn in e.get("files", []):
-            fp = os.path.join(addins_dir, fn)
-            if not os.path.exists(fp):
-                log("[L]   AddIns 内无 %s，跳过" % fn)
-                continue
-            try:
-                os.remove(fp)
-                log("[L]   已删除文件：%s" % fp)
-                removed_file += 1
-            except OSError as ex:
-                problems.append("删除文件 %s 失败：%s" % (fp, ex))
-
-    log("")
-    log("-" * 66)
-    log("[L] 清理完成：注销注册表 %d 项、删除文件 %d 个" % (removed_reg, removed_file))
-
-    leftover = list_legacy_installed({s["addin_filename"]})
-    if leftover:
-        log("[L] 提示：AddIns 目录下仍有其它加载项（不在本次清单内，未做处理）：")
-        for p in leftover:
-            log("      - %s" % p)
-    else:
-        log("[L] AddIns 目录下已无其它加载项")
-
-    if problems:
-        log("[L] 存在问题：")
-        for p in problems:
-            log("[L]   [!] %s" % p)
-        rc = 1
-    else:
-        rc = 0
-    log("[L] 重启 PowerPoint 后生效")
-
-    with open(os.path.join(DIST_DIR, "disable-legacy-report.txt"), "w",
-              encoding="utf-8") as f:
-        f.write("\n".join(log_lines))
-    return rc
-
-
 # ================================================================ main
 
 def main():
@@ -674,9 +551,6 @@ def main():
     ap.add_argument("--register-only", action="store_true",
                     help="不重新构建，只把 dist 中已有产物安装并登记")
     ap.add_argument("--list", action="store_true", help="只列出扫描到的插件")
-    ap.add_argument("--disable-legacy", action="store_true",
-                    help="按 suite.json 的 legacy 清单清理被取代的旧加载项"
-                         "（解除注册表登记 + 删除 AddIns 内旧文件，需先退出 PowerPoint）")
     ap.add_argument("--selftest", action="store_true",
                     help="注入自检代码，产出 PptEnhanceSuite-selftest.ppam（不安装）")
     args = ap.parse_args()
@@ -691,10 +565,6 @@ def main():
                             label="[测试] 增强插件")
         args.no_install = True
     s = suite["suite"]
-
-    # 清理模式：与构建流程完全无关，处理完直接返回
-    if args.disable_legacy:
-        return disable_legacy(suite)
 
     log("=" * 66)
     log("%s · 构建  v%s" % (s["title"], s["version"]))
@@ -799,12 +669,6 @@ def main():
         log("[D] 安装完成：%s" % dst)
         if not reg_ok:
             log("[D] 警告：注册表登记校验未通过，加载项可能不会随启动自动加载")
-        legacy = list_legacy_installed({s["addin_filename"]})
-        if legacy:
-            log("[D] 提示：AddIns 目录下还有其它加载项，可能与本套件出现重复入口：")
-            for p in legacy:
-                log("      - %s" % p)
-            log("      确认本套件工作正常后，可移除它们（或运行 --disable-legacy）")
     else:
         log("[D] 已跳过安装")
 
