@@ -1,0 +1,24 @@
+{
+  "id": "slide-export",
+  "order": 20,
+  "title": "选页另存",
+  "group": {
+    "id": "grpSlideExport",
+    "label": "选页另存",
+    "imageMso": "FileSaveAs"
+  },
+  "components": [
+    { "type": "module", "name": "m_SlideExport", "file": "m_SlideExport.bas" }
+  ],
+  "buttons": [
+    {
+      "id": "btnSlideExport",
+      "label": "导出选中幻灯片",
+      "size": "large",
+      "imageMso": "FileSaveAs",
+      "onAction": "Ribbon_SlideExport_Selected",
+      "screentip": "把选中的幻灯片另存为新 .pptx",
+      "supertip": "在左侧缩略图窗格选中若干页（Ctrl 多选不连续的页、Shift 选连续区间），一键另存为一份新的 .pptx。采用「整本另存为副本后删除未选页」的方式，完整保留原版式、母版、页面尺寸、主题、备注、动画与切换效果。"
+    }
+  ]
+}

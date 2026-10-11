@@ -1,0 +1,10 @@
+{
+  "id": "_core",
+  "order": 0,
+  "title": "公共核心层",
+  "group": null,
+  "buttons": [],
+  "components": [
+    { "type": "module", "name": "m_Core", "file": "m_Core.bas" }
+  ]
+}

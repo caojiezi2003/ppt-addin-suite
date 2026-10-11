@@ -1,0 +1,24 @@
+{
+  "id": "image-replace",
+  "order": 30,
+  "title": "图片替换",
+  "group": {
+    "id": "grpImageReplace",
+    "label": "图片替换",
+    "imageMso": "PictureInsertFromFile"
+  },
+  "components": [
+    { "type": "module", "name": "m_ImageReplace", "file": "m_ImageReplace.bas" }
+  ],
+  "buttons": [
+    {
+      "id": "btnImageReplace",
+      "label": "原位替换图片",
+      "size": "large",
+      "imageMso": "PictureInsertFromFile",
+      "onAction": "Ribbon_ImageReplace_Replace",
+      "screentip": "用新图片原位替换选中的图片",
+      "supertip": "在幻灯片上选中一张图片后点击，挑一张新图替换它。位置、尺寸、裁剪、旋转与翻转、亮度对比度、透明度、阴影 / 边框 / 发光 / 艺术效果、图层顺序、名称 / 替代文字 / 超链接、动画全部保留，新图不会跑到最顶层。"
+    }
+  ]
+}

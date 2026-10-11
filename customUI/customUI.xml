@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab id="tabEnhanceTest" label="[测试] 增强插件" insertAfterMso="TabInsert">
+        <group id="grpImageExport" label="导出图片" imageMso="ExportToAnimatedGif">
+          <button id="btnImageExport"
+                  label="导出为图片"
+                  size="large"
+                  onAction="Ribbon_ImageExport_Export"
+                  imageMso="ExportToAnimatedGif"
+                  screentip="自定义尺寸 / 分辨率导出图片"
+                  supertip="绕过 PowerPoint「另存为」固定 96 DPI 的限制。可按预设档位（FHD / 2K / 4K / 8K / 印刷级 DPI）或自定义 DPI 与像素尺寸，把幻灯片导出为 PNG / JPG / TIFF / BMP，支持当前页、全部页、选中页与页码范围。"/>
+        </group>
+        <group id="grpSlideExport" label="选页另存" imageMso="FileSaveAs">
+          <button id="btnSlideExport"
+                  label="导出选中幻灯片"
+                  size="large"
+                  onAction="Ribbon_SlideExport_Selected"
+                  imageMso="FileSaveAs"
+                  screentip="把选中的幻灯片另存为新 .pptx"
+                  supertip="在左侧缩略图窗格选中若干页（Ctrl 多选不连续的页、Shift 选连续区间），一键另存为一份新的 .pptx。采用「整本另存为副本后删除未选页」的方式，完整保留原版式、母版、页面尺寸、主题、备注、动画与切换效果。"/>
+        </group>
+        <group id="grpImageReplace" label="图片替换" imageMso="PictureInsertFromFile">
+          <button id="btnImageReplace"
+                  label="原位替换图片"
+                  size="large"
+                  onAction="Ribbon_ImageReplace_Replace"
+                  imageMso="PictureInsertFromFile"
+                  screentip="用新图片原位替换选中的图片"
+                  supertip="在幻灯片上选中一张图片后点击，挑一张新图替换它。位置、尺寸、裁剪、旋转与翻转、亮度对比度、透明度、阴影 / 边框 / 发光 / 艺术效果、图层顺序、名称 / 替代文字 / 超链接、动画全部保留，新图不会跑到最顶层。"/>
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

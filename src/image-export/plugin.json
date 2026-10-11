@@ -1,0 +1,26 @@
+{
+  "id": "image-export",
+  "order": 10,
+  "title": "导出图片",
+  "group": {
+    "id": "grpImageExport",
+    "label": "导出图片",
+    "imageMso": "ExportToAnimatedGif"
+  },
+  "components": [
+    { "type": "module", "name": "m_ImageExport", "file": "m_ImageExport.bas" },
+    { "type": "form", "name": "frmImageExport", "file": "frmImageExport.code.vba",
+      "design_width_pt": 392, "design_height_pt": 312 }
+  ],
+  "buttons": [
+    {
+      "id": "btnImageExport",
+      "label": "导出为图片",
+      "size": "large",
+      "imageMso": "ExportToAnimatedGif",
+      "onAction": "Ribbon_ImageExport_Export",
+      "screentip": "自定义尺寸 / 分辨率导出图片",
+      "supertip": "绕过 PowerPoint「另存为」固定 96 DPI 的限制。可按预设档位（FHD / 2K / 4K / 8K / 印刷级 DPI）或自定义 DPI 与像素尺寸，把幻灯片导出为 PNG / JPG / TIFF / BMP，支持当前页、全部页、选中页与页码范围。"
+    }
+  ]
+}
